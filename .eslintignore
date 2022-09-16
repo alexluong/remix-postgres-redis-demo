@@ -1,0 +1,6 @@
+# Project Files
+/build/*
+/public/build/*
+
+# Dependencies
+node_modules/*

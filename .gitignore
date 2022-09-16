@@ -1,0 +1,11 @@
+# Project Files
+/.cache
+/build
+/public/build
+.env
+
+# Dependencies
+node_modules
+
+# IDEs
+.idea/

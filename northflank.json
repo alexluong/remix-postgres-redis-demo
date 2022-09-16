@@ -1,0 +1,201 @@
+{
+  "apiVersion": "v1",
+  "spec": {
+    "kind": "Workflow",
+    "spec": {
+      "type": "sequential",
+      "steps": [
+        {
+          "kind": "Addon",
+          "spec": {
+            "name": "postgres",
+            "type": "postgres",
+            "version": "14.5.0",
+            "billing": {
+              "deploymentPlan": "nf-compute-10",
+              "storageClass": "ssd",
+              "storage": 4096,
+              "replicas": 1
+            },
+            "tlsEnabled": true,
+            "description": "",
+            "externalAccessEnabled": false,
+            "ipPolicies": [],
+            "pitrEnabled": false
+          }
+        },
+        {
+          "kind": "Addon",
+          "spec": {
+            "name": "redis",
+            "description": "",
+            "type": "redis",
+            "version": "7.0.4",
+            "billing": {
+              "deploymentPlan": "nf-compute-10",
+              "storageClass": "ssd",
+              "storage": 4096,
+              "replicas": 1
+            },
+            "tlsEnabled": true,
+            "externalAccessEnabled": false,
+            "ipPolicies": [],
+            "pitrEnabled": false
+          }
+        },
+        {
+          "kind": "SecretGroup",
+          "spec": {
+            "name": "secrets",
+            "secretType": "environment-arguments",
+            "priority": 10,
+            "addonDependencies": [
+              {
+                "addonId": "postgres",
+                "keys": [
+                  {
+                    "keyName": "HOST",
+                    "aliases": [
+                      "DB_HOST"
+                    ]
+                  },
+                  {
+                    "keyName": "PORT",
+                    "aliases": [
+                      "DB_PORT"
+                    ]
+                  },
+                  {
+                    "keyName": "TLS_ENABLED",
+                    "aliases": [
+                      "DB_SSL"
+                    ]
+                  },
+                  {
+                    "keyName": "USERNAME",
+                    "aliases": [
+                      "DB_USERNAME"
+                    ]
+                  },
+                  {
+                    "keyName": "PASSWORD",
+                    "aliases": [
+                      "DB_PASSWORD"
+                    ]
+                  },
+                  {
+                    "keyName": "DATABASE",
+                    "aliases": [
+                      "DB_NAME"
+                    ]
+                  }
+                ]
+              },
+              {
+                "addonId": "redis",
+                "keys": [
+                  {
+                    "keyName": "REDIS_MASTER_URL",
+                    "aliases": [
+                      "REDIS_URI"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "description": "",
+            "restrictions": {
+              "restricted": false,
+              "nfObjects": []
+            }
+          }
+        },
+        {
+          "kind": "BuildService",
+          "spec": {
+            "name": "build",
+            "billing": {
+              "deploymentPlan": "nf-compute-10"
+            },
+            "vcsData": {
+              "projectUrl": "https://github.com/northflank-examples/remix-postgres-redis-demo",
+              "projectType": "github",
+              "accountLogin": "northflank-examples"
+            },
+            "buildSettings": {
+              "dockerfile": {
+                "buildEngine": "kaniko",
+                "dockerFilePath": "/Dockerfile",
+                "dockerWorkDir": "/",
+                "useCache": false
+              }
+            },
+            "buildConfiguration": {
+              "prRestrictions": [
+                "*"
+              ],
+              "branchRestrictions": [
+                "master"
+              ]
+            },
+            "description": "",
+            "buildArguments": {}
+          }
+        },
+        {
+          "kind": "DeploymentService",
+          "spec": {
+            "name": "server",
+            "billing": {
+              "deploymentPlan": "nf-compute-10"
+            },
+            "deployment": {
+              "instances": 1,
+              "storage": {
+                "ephemeralStorage": {
+                  "storageSize": 1024
+                }
+              },
+              "internal": {
+                "id": "build",
+                "branch": "master",
+                "buildSHA": "latest",
+                "buildId": "brave-tank-6868"
+              }
+            },
+            "ports": [
+              {
+                "name": "p01",
+                "internalPort": 3000,
+                "public": true,
+                "protocol": "HTTP",
+                "security": {
+                  "credentials": [],
+                  "policies": []
+                },
+                "domains": [],
+                "disableNfDomain": false
+              }
+            ],
+            "healthChecks": [],
+            "description": "",
+            "runtimeEnvironment": {}
+          }
+        },
+        {
+          "kind": "Build",
+          "spec": {
+            "nfObjectId": "build",
+            "nfObjectType": "service",
+            "branch": "master"
+          }
+        }
+      ]
+    }
+  },
+  "name": "demo",
+  "description": "",
+  "project": {
+    "id": "remix-pg-redis-demo"
+  }
+}
